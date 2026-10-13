@@ -1,0 +1,30 @@
+{
+  "depth": "full",
+  "output_format": "both",
+  "output_dir": "./model-reports",
+  "html_theme": "tech-dark",
+  "include_comparison": "auto",
+  "fact_annotation": true,
+  "fetch_timeout": 30,
+  "max_related_datasets": 5,
+  "max_related_models": 3,
+  "brief_modules": [1, 2, 4, 7],
+  "full_modules": [1, 2, 3, 4, 5, 6, 7],
+  "sources": {
+    "huggingface": {
+      "enabled": true,
+      "api_base": "https://huggingface.co/api",
+      "raw_base": "https://huggingface.co"
+    },
+    "modelscope": {
+      "enabled": true,
+      "api_base": "https://modelscope.cn/api/v1",
+      "raw_base": "https://modelscope.cn"
+    },
+    "github": {
+      "enabled": true,
+      "api_base": "https://api.github.com",
+      "raw_base": "https://raw.githubusercontent.com"
+    }
+  }
+}

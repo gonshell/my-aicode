@@ -1,0 +1,12 @@
+# 临时文件
+.scratch/
+*.tmp
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# 系统
+.DS_Store
+Thumbs.db

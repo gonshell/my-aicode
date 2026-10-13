@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Config with secrets - DO NOT commit
+config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Image cache
+/tmp/qwen_harness/

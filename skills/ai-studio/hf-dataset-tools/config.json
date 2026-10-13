@@ -1,0 +1,25 @@
+{
+  "default_source": "huggingface",
+  "timeout": 120,
+  "skip_existing": true,
+  "inspect_preview_chars": 500,
+  "readme_template": "default",
+  "sources": {
+    "huggingface": {
+      "api_base": "https://huggingface.co/api",
+      "raw_base": "https://huggingface.co",
+      "resolve_base": "https://huggingface.co"
+    },
+    "modelscope": {
+      "api_base": "https://modelscope.cn/api/v1",
+      "raw_base": "https://modelscope.cn"
+    }
+  },
+  "category_rules": {
+    "reasoning": ["reasoning", "cot", "chain-of-thought", "math", "思考"],
+    "agentic": ["agent", "tool", "function-call", "智能体", "工具调用"],
+    "code": ["code", "programming", "coding", "代码"],
+    "chat": ["chat", "conversation", "对话", "聊天"],
+    "multimodal": ["vision", "image", "video", "audio", "多模态"]
+  }
+}

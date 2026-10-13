@@ -1,0 +1,19 @@
+{
+  "root_dir": "/root/workspace/reading-workspace/",
+  "default_role": "thinking_partner",
+  "auto_reflection_enabled": true,
+  "context_summary_recent_turns": 3,
+  "review_default_scope": "last_30_days",
+  "card_types": [
+    "concept",
+    "methodology",
+    "case",
+    "opinion"
+  ],
+  "literary_genres": [
+    "novel",
+    "poetry",
+    "philosophy",
+    "literary_criticism"
+  ]
+}

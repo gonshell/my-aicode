@@ -1,0 +1,9 @@
+{
+  "default_skeleton": "拆解型",
+  "default_target_reader": "AI从业者/技术管理者",
+  "default_word_count": "4000-6000",
+  "default_html_theme": "wechat-light",
+  "references_min_count": 5,
+  "search_rounds_max": 3,
+  "feishu_archive_default": false
+}

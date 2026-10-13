@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识结构化编辑器 v0.5 原型 - 专家知识智能化系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#0ea5e9',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        neutral: '#64748b',
+                        dark: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .panel-shadow {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+        }
+        .input-focus {
+            transition: all 0.15s;
+        }
+        .input-focus:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+        .tree-node {
+            transition: all 0.15s;
+        }
+        .tree-node:hover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+    <!-- 顶部工具栏 -->
+    <header class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between sticky top-0 z-50 panel-shadow">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-brain text-primary text-xl"></i>
+                <span class="font-bold text-dark">Knowledge IDE</span>
+                <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">v0.5 原型</span>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <span class="text-sm text-slate-600">正在编辑：</span>
+            <span class="text-sm font-medium text-primary">KB-2025-0042</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button class="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded transition">
+                <i class="fas fa-history mr-1.5"></i>历史版本
+            </button>
+            <button class="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded transition">
+                <i class="fas fa-eye mr-1.5"></i>预览
+            </button>
+            <button class="px-3 py-1.5 text-sm text-warning hover:bg-amber-50 rounded transition border border-amber-200">
+                <i class="fas fa-flag mr-1.5"></i>提交审核
+            </button>
+            <button class="px-4 py-1.5 text-sm bg-primary text-white hover:bg-indigo-700 rounded transition font-medium">
+                <i class="fas fa-save mr-1.5"></i>保存草稿
+            </button>
+        </div>
+    </header>
+
+    <!-- 主内容区：三栏布局 -->
+    <div class="flex h-[calc(100vh-56px)]">
+        
+        <!-- 左侧：元数据面板 -->
+        <aside class="w-72 bg-white border-r border-slate-200 p-4 overflow-y-auto">
+            <h3 class="font-semibold text-dark mb-4 flex items-center">
+                <i class="fas fa-database text-primary mr-2"></i>
+                元数据
+            </h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">知识 ID</label>
+                    <input type="text" value="KB-2025-0042" class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-slate-50 input-focus" readonly>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">标题 *</label>
+                    <input type="text" value="1号汽轮机高压缸振动异常诊断逻辑" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">领域 *</label>
+                        <select class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                            <option>设备故障诊断</option>
+                            <option>工艺参数优化</option>
+                            <option>安全操作规程</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">设备 *</label>
+                        <select class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                            <option>1号汽轮机</option>
+                            <option>2号汽轮机</option>
+                            <option>给水泵组</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">知识作者 *</label>
+                    <select class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                        <option>张建国（集团首席技师）</option>
+                        <option>李卫国（高级工程师）</option>
+                        <option>王建华（设备主管）</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-2">置信度</label>
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="fas fa-star text-warning"></i>
+                        <i class="far fa-star text-slate-300"></i>
+                        <span class="ml-2 text-sm font-medium text-dark">0.85</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">专家审核确认后自动提升</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">版本</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" value="v1.2" class="w-20 px-3 py-2 text-sm border border-slate-200 rounded bg-slate-50 input-focus" readonly>
+                        <span class="text-xs text-slate-400">下次复审：2026-01-15</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">标签</label>
+                    <div class="flex flex-wrap gap-1.5">
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">汽轮机</span>
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">振动异常</span>
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">高压缸</span>
+                        <button class="px-2 py-1 bg-slate-100 text-slate-500 text-xs rounded-full hover:bg-slate-200 transition">+添加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 mt-6 pt-4">
+                <h4 class="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">质量评分</h4>
+                <div class="bg-slate-50 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-dark">总体质量</span>
+                        <span class="text-lg font-bold text-warning">72分</span>
+                    </div>
+                    
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-600">边界条件</span>
+                            <span class="text-xs font-medium text-success"><i class="fas fa-check mr-1"></i>已完善</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-600">置信度标注</span>
+                            <span class="text-xs font-medium text-success"><i class="fas fa-check mr-1"></i>已完善</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-600">反例说明</span>
+                            <span class="text-xs font-medium text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>待补充</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-600">适用条件</span>
+                            <span class="text-xs font-medium text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>待补充</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-600">可测试性</span>
+                            <span class="text-xs font-medium text-success"><i class="fas fa-check mr-1"></i>良好</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                        <i class="fas fa-lightbulb mr-1.5"></i>
+                        建议补充2个反例场景，完善适用条件后可提交审核
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 中间：四维结构编辑区 -->
+        <main class="flex-1 overflow-y-auto p-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-lg font-semibold text-dark mb-6 flex items-center">
+                    <i class="fas fa-layer-group text-primary mr-2"></i>
+                    四维知识结构编辑器
+                </h2>
+                
+                <!-- 现象层 -->
+                <section class="bg-white rounded-xl panel-shadow mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-eye mr-2"></i>
+                            <span class="font-semibold">第一层：现象层</span>
+                            <span class="ml-2 text-blue-200 text-sm">用户观察到了什么异常</span>
+                        </div>
+                        <button class="text-white/80 hover:text-white text-sm transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-2">主要现象（可多选）</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <label class="flex items-center px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition">
+                                        <input type="checkbox" checked class="mr-2 text-blue-600">
+                                        <span class="text-sm text-blue-800">参数异常</span>
+                                    </label>
+                                    <label class="flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                                        <input type="checkbox" class="mr-2 text-slate-600">
+                                        <span class="text-sm text-slate-700">声音异常</span>
+                                    </label>
+                                    <label class="flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                                        <input type="checkbox" class="mr-2 text-slate-600">
+                                        <span class="text-sm text-slate-700">动作异常</span>
+                                    </label>
+                                    <label class="flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                                        <input type="checkbox" checked class="mr-2 text-slate-600">
+                                        <span class="text-sm text-slate-700">振动异常</span>
+                                    </label>
+                                    <label class="flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+                                        <input type="checkbox" class="mr-2 text-slate-600">
+                                        <span class="text-sm text-slate-700">温度异常</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-2">具体参数阈值</label>
+                                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                    <div class="grid grid-cols-4 gap-3">
+                                        <div>
+                                            <span class="text-xs text-slate-500">参数名称</span>
+                                            <input type="text" value="X方向振动" class="w-full mt-1 px-2 py-1.5 text-sm border border-slate-200 rounded input-focus">
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-500">正常值</span>
+                                            <input type="text" value="＜30μm" class="w-full mt-1 px-2 py-1.5 text-sm border border-slate-200 rounded input-focus">
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-500">异常值</span>
+                                            <input type="text" value="＞60μm" class="w-full mt-1 px-2 py-1.5 text-sm border border-slate-200 rounded input-focus">
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-500">单位</span>
+                                            <input type="text" value="μm" class="w-full mt-1 px-2 py-1.5 text-sm border border-slate-200 rounded input-focus">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-2">现象详细描述</label>
+                                <textarea rows="3" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus resize-none">振动值持续超过60μm，呈缓慢上升趋势，伴随有轻微的金属摩擦声，油温正常（42-45℃），负荷在50%-100%范围内时现象明显，低负荷（<30%）时振动值回落至正常范围。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 判断层 -->
+                <section class="bg-white rounded-xl panel-shadow mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-project-diagram mr-2"></i>
+                            <span class="font-semibold">第二层：判断层</span>
+                            <span class="ml-2 text-purple-200 text-sm">决策逻辑（拖拽式编辑）</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="text-white/80 hover:text-white text-xs transition px-2 py-1 border border-white/30 rounded">
+                                <i class="fas fa-plus mr-1"></i>添加节点
+                            </button>
+                            <button class="text-white/80 hover:text-white text-sm transition">
+                                <i class="fas fa-expand-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-50 min-h-[280px]">
+                        <!-- 决策树可视化 -->
+                        <div class="flex flex-col items-center">
+                            <!-- 根节点 -->
+                            <div class="tree-node bg-white border-2 border-purple-300 rounded-lg p-3 w-56 text-center cursor-move shadow-sm">
+                                <div class="text-sm font-medium text-purple-800">振动 > 60μm ？</div>
+                                <div class="text-xs text-purple-500 mt-1">优先检查项</div>
+                            </div>
+                            
+                            <!-- 连接线 -->
+                            <div class="flex w-72 mt-2">
+                                <div class="flex-1 flex flex-col items-center">
+                                    <div class="h-6 w-px bg-slate-300"></div>
+                                    <div class="text-xs text-success font-medium">是</div>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center">
+                                    <div class="h-6 w-px bg-slate-300"></div>
+                                    <div class="text-xs text-danger font-medium">否</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二层节点 -->
+                            <div class="flex w-96 justify-between mt-2">
+                                <div class="tree-node bg-white border-2 border-green-300 rounded-lg p-3 w-44 text-center cursor-move shadow-sm">
+                                    <div class="text-sm font-medium text-green-800">频谱是否以1倍频为主？</div>
+                                    <div class="text-xs text-green-500 mt-1">不平衡特征</div>
+                                </div>
+                                <div class="tree-node bg-white border-2 border-red-300 rounded-lg p-3 w-44 text-center cursor-move shadow-sm">
+                                    <div class="text-sm font-medium text-red-800">检查其他参数</div>
+                                    <div class="text-xs text-red-500 mt-1">油温、真空、轴向位移</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二层连接线 -->
+                            <div class="flex w-96 mt-2">
+                                <div class="w-44 flex flex-col items-center">
+                                    <div class="h-4 w-px bg-slate-300"></div>
+                                    <div class="text-xs text-success font-medium">是 → 不平衡</div>
+                                </div>
+                                <div class="flex-1"></div>
+                                <div class="w-44"></div>
+                            </div>
+                            
+                            <!-- 叶节点 -->
+                            <div class="flex w-96 justify-between mt-2">
+                                <div class="tree-node bg-green-50 border-2 border-green-400 rounded-lg p-3 w-44 text-center cursor-move shadow-sm">
+                                    <div class="text-sm font-medium text-green-800">结论：转子不平衡</div>
+                                    <div class="text-xs text-green-600 mt-1">置信度: 0.90</div>
+                                </div>
+                                <div class="w-44"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-center text-xs text-slate-400">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            拖拽节点调整位置，双击节点编辑内容
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 行动层 -->
+                <section class="bg-white rounded-xl panel-shadow mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-list-ol mr-2"></i>
+                            <span class="font-semibold">第三层：行动层</span>
+                            <span class="ml-2 text-green-200 text-sm">确认问题后应该怎么做</span>
+                        </div>
+                        <button class="text-white/80 hover:text-white text-xs transition px-2 py-1 border border-white/30 rounded">
+                            <i class="fas fa-plus mr-1"></i>添加步骤
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">1</div>
+                                <div class="flex-1">
+                                    <input type="text" value="立即降负荷至50%以下，观察振动值变化" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                </div>
+                                <button class="text-slate-400 hover:text-slate-600 transition flex-shrink-0">
+                                    <i class="fas fa-grip-vertical cursor-move"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">2</div>
+                                <div class="flex-1">
+                                    <input type="text" value="通知值长和设备主管，说明情况" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                </div>
+                                <button class="text-slate-400 hover:text-slate-600 transition flex-shrink-0">
+                                    <i class="fas fa-grip-vertical cursor-move"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">3</div>
+                                <div class="flex-1">
+                                    <input type="text" value="如振动继续上升超过80μm，立即紧急停机" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                </div>
+                                <button class="text-slate-400 hover:text-slate-600 transition flex-shrink-0">
+                                    <i class="fas fa-grip-vertical cursor-move"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <div class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">4</div>
+                                <div class="flex-1">
+                                    <input type="text" value="停机后优先检查联轴器对中和轴承磨损情况" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                </div>
+                                <button class="text-slate-400 hover:text-slate-600 transition flex-shrink-0">
+                                    <i class="fas fa-grip-vertical cursor-move"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-xs font-medium text-slate-500 mb-2">安全注意事项</label>
+                            <textarea rows="2" class="w-full px-3 py-2 text-sm border border-slate-200 rounded input-focus resize-none bg-red-50 border-red-200">严禁在振动超过80μm时继续升负荷；紧急停机时严格按照停机操作票执行，严禁跳步骤操作。</textarea>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 边界层 -->
+                <section class="bg-white rounded-xl panel-shadow mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center text-white">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span class="font-semibold">第四层：边界层</span>
+                            <span class="ml-2 text-amber-200 text-sm">适用与不适用条件（这是最重要的一层！）</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-medium text-success mb-2">
+                                    <i class="fas fa-check-circle mr-1"></i>适用条件
+                                </label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" value="设备使用年限5-20年" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                        <button class="text-slate-400 hover:text-danger"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" value="负荷范围50%-100%" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                        <button class="text-slate-400 hover:text-danger"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" value="季节：夏季阈值略降低" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                        <button class="text-slate-400 hover:text-danger"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <button class="text-xs text-success hover:text-green-700 transition">
+                                        <i class="fas fa-plus mr-1"></i>添加适用条件
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-danger mb-2">
+                                    <i class="fas fa-times-circle mr-1"></i>不适用条件
+                                </label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" value="新安装设备72小时试运行期间" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                        <button class="text-slate-400 hover:text-danger"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" value="重大事故后的首次开机" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded input-focus">
+                                        <button class="text-slate-400 hover:text-danger"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <button class="text-xs text-danger hover:text-red-700 transition">
+                                        <i class="fas fa-plus mr-1"></i>添加不适用条件
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <label class="block text-xs font-medium text-slate-500 mb-2">
+                                <i class="fas fa-bolt mr-1"></i>反例场景（很重要！：什么情况看起来像但其实不是？）
+                            </label>
+                            <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <textarea rows="3" class="w-full px-3 py-2 text-sm border border-amber-300 rounded input-focus resize-none bg-transparent" placeholder="举例：有时真空变化也会引起振动变化，但这种情况通常伴随真空参数明显变化，且振动是突发性的而非缓慢上升——不要误判为不平衡。">
+                                </textarea>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                反例是区分新手和专家的核心标志——新手只知道"什么时候是"，专家还知道"什么时候不是"
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- 右侧：版本历史面板 -->
+        <aside class="w-64 bg-white border-l border-slate-200 p-4 overflow-y-auto">
+            <h3 class="font-semibold text-dark mb-4 flex items-center">
+                <i class="fas fa-history text-primary mr-2"></i>
+                版本历史
+            </h3>
+            
+            <div class="space-y-4">
+                <!-- 当前版本 -->
+                <div class="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-primary">v1.2（当前）</span>
+                        <span class="text-xs bg-primary text-white px-2 py-0.5 rounded-full">草稿</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-1">修改人：系统管理员</p>
+                    <p class="text-xs text-slate-500 mb-2">2025-01-15 14:32</p>
+                    <p class="text-xs text-slate-600">补充夏季满负荷时的警戒值调整说明</p>
+                </div>
+                
+                <!-- 历史版本 -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-dark">v1.1</span>
+                        <span class="text-xs bg-success text-white px-2 py-0.5 rounded-full">已发布</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-1">修改人：张建国</p>
+                    <p class="text-xs text-slate-500 mb-2">2025-01-12 09:15</p>
+                    <p class="text-xs text-slate-600">修正振动警戒值从65μm调整为60μm</p>
+                    <button class="text-xs text-primary mt-2 hover:underline">
+                        <i class="fas fa-eye mr-1"></i>查看此版本
+                    </button>
+                </div>
+                
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-dark">v1.0</span>
+                        <span class="text-xs bg-success text-white px-2 py-0.5 rounded-full">已发布</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-1">修改人：张建国</p>
+                    <p class="text-xs text-slate-500 mb-2">2025-01-10 16:42</p>
+                    <p class="text-xs text-slate-600">初始版本，从访谈记录整理</p>
+                    <button class="text-xs text-primary mt-2 hover:underline">
+                        <i class="fas fa-eye mr-1"></i>查看此版本
+                    </button>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 mt-6 pt-4">
+                <h4 class="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">来源信息</h4>
+                <div class="bg-slate-50 rounded-lg p-3 text-xs space-y-2">
+                    <div>
+                        <span class="text-slate-500">来源类型：</span>
+                        <span class="text-slate-700">专家访谈</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">访谈时间：</span>
+                        <span class="text-slate-700">2025-01-08</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">访谈时长：</span>
+                        <span class="text-slate-700">45分钟</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">录音时长：</span>
+                        <span class="text-slate-700">42:17</span>
+                    </div>
+                    <button class="text-primary hover:underline mt-2 block">
+                        <i class="fas fa-play mr-1"></i>播放访谈录音
+                    </button>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 mt-6 pt-4">
+                <h4 class="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">关联知识</h4>
+                <div class="space-y-2">
+                    <a href="#" class="block p-2 bg-slate-50 hover:bg-slate-100 rounded text-xs text-slate-700 transition">
+                        KB-0038 · 汽轮机振动频谱分析方法
+                    </a>
+                    <a href="#" class="block p-2 bg-slate-50 hover:bg-slate-100 rounded text-xs text-slate-700 transition">
+                        KB-0045 · 汽轮机紧急停机操作票
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <!-- 底部状态栏 -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-1.5 flex items-center justify-between text-xs text-slate-500 z-40">
+        <div class="flex items-center space-x-4">
+            <span><i class="fas fa-save mr-1 text-success"></i>已自动保存</span>
+            <span>上次保存：2分钟前</span>
+            <span>字数：约1200字</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span>知识萃取师：李明</span>
+            <span>预计审核时间：2个工作日</span>
+        </div>
+    </footer>
+</body>
+</html>

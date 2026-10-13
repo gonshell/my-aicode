@@ -1,0 +1,6 @@
+# 临时文件与构建产物
+.scratch/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/

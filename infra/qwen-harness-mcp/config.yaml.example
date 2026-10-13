@@ -1,0 +1,26 @@
+# Qwen Harness MCP Server 配置文件模板
+# 复制为 config.yaml 后填写
+
+# [必填] Token Plan API Key
+api_key: ""
+
+# [必填] Base URL，格式：https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+base_url: ""
+
+# [可选] 使用的模型
+model: "qwen3.7-plus"
+
+# [可选] 普通工具调用超时（秒）
+timeout: 60
+
+# [可选] code_interpreter 超时（秒）
+code_timeout: 120
+
+# [可选] 图片下载目录
+image_dir: "/tmp/qwen_harness"
+
+# [可选] 单张图片最大下载大小（字节）
+max_image_size: 10485760
+
+# [可选] 失败重试次数
+max_retries: 2
