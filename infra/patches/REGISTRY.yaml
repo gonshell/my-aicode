@@ -1,0 +1,67 @@
+# 本地补丁清单。脚本（bin/）读写本文件；规则见同目录 README.md。
+# 字段说明：
+#   id            稳定标识 <target短名>-NNNN，脚本参数与 fact_store 指针都用它
+#   kind          hermes-plugin | hermes-agent
+#   target        插件/包名
+#   upstream      上游仓库 URL
+#   install_path  被修改代码的实际位置
+#   base_version  补丁基于的上游版本
+#   base_commit   基线 commit（冲突时 checkout 对照用）
+#   patches       补丁文件（相对本文件目录），按应用顺序
+#   test          自包含验证脚本，exit 0 = 通过
+#   anchor        代码中 "Local patch NNNN" 锚点，升级后 grep 它确认补丁存活
+#   summary       一句话说明
+#   why           上游为什么不满足
+#   status        active | merged-upstream | abandoned | superseded
+#   branch        目标仓库中的本地分支
+#   pr_branch     提 PR 时用的分支名
+#   upstream_pr   PR URL，空串=未提（"提没提"的唯一判据）
+#   pr_status     not-proposed | draft | open | merged | closed
+#   pr_checked_at 最近核查日期 YYYY-MM-DD
+#   created       创建日期
+#   notes         PR 拆分/描述要点等
+
+patches:
+  - id: holographic-0001
+    kind: hermes-plugin
+    target: holographic
+    upstream: https://github.com/itpartypattaya/hermes-plugin-holographic
+    install_path: /root/.hermes/plugins/holographic
+    base_version: v0.6.1
+    base_commit: 46b6f90
+    branch: local-patches
+    pr_branch: fix-cjk-sentence-split
+    patches:
+      - hermes-plugins/holographic/0001-fix-sentence-split-v0.6.1.patch
+    test: hermes-plugins/holographic/0001-zh-auto-extract-v0.6.1.test.py
+    anchor: "Local patch 0001"
+    summary: 自动抽取的句子切分：CJK 。！？； 断句，拉丁 .!? 仅在空格/文末断（修复 v1.18 被切碎）
+    why: 上游 _RE_SENTENCE 遇任意 "." 即断句且不认中文句号，版本号被切碎、整段中文无法切句
+    status: active
+    upstream_pr: ""
+    pr_status: not-proposed
+    pr_checked_at: ""
+    created: "2026-10-15"
+    notes: 纯 bugfix，与语言无关，建议作为独立 PR 先提；已验证对 v0.6.2 可干净 git am
+
+  - id: holographic-0002
+    kind: hermes-plugin
+    target: holographic
+    upstream: https://github.com/itpartypattaya/hermes-plugin-holographic
+    install_path: /root/.hermes/plugins/holographic
+    base_version: v0.6.1
+    base_commit: 46b6f90
+    branch: local-patches
+    pr_branch: zh-extract-patterns
+    patches:
+      - hermes-plugins/holographic/0002-zh-extract-patterns-v0.6.1.patch
+    test: hermes-plugins/holographic/0001-zh-auto-extract-v0.6.1.test.py
+    anchor: "Local patch 0002"
+    summary: _EXTRACT_CATEGORIES 增加中文偏好/决策模式（英文、俄文模式不动）
+    why: 上游仅匹配英文/俄文，中文会话永不自动产生事实
+    status: active
+    upstream_pr: ""
+    pr_status: not-proposed
+    pr_checked_at: ""
+    created: "2026-10-15"
+    notes: 语言扩展特性，与 0001 分开提；依赖 0001 才能正确切句，PR 说明中注明

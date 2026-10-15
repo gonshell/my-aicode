@@ -1,0 +1,42 @@
+From 17fdc95da6b0955ebd0bd1763c0c8071cd09dba1 Mon Sep 17 00:00:00 2001
+From: gonshell <gonshell@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 23:31:40 +0800
+Subject: [PATCH 2/2] local-patch 0002: Chinese preference/decision patterns
+ for auto-extraction
+
+_EXTRACT_CATEGORIES matched English and Russian only, so a Chinese
+conversation never produced an auto-extracted fact.
+---
+ __init__.py | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/__init__.py b/__init__.py
+index 620afb3..0a3d799 100644
+--- a/__init__.py
++++ b/__init__.py
+@@ -105,11 +105,20 @@ _EXTRACT_CATEGORIES = (
+       re.compile(r'\bmy\s+(?:favorite|favourite|preferred|default)\s+\w+\s+is\s+\S', re.IGNORECASE),
+       re.compile(r'\bI\s+(?:always|never|usually)\s+\S', re.IGNORECASE),
+       re.compile(r'(?:^|\s)я\s+(?:предпочитаю|люблю|использую|пользуюсь|хочу|обычно|всегда|никогда|не\s+ем|не\s+пью)\s+\S', re.IGNORECASE),
+-      re.compile(r'(?:^|\s)мо[йяеи]\s+любим\w+\s+\S', re.IGNORECASE)], "user_pref"),
++      re.compile(r'(?:^|\s)мо[йяеи]\s+любим\w+\s+\S', re.IGNORECASE),
++      # Local patch 0002: Chinese preferences — 我偏好/喜欢/习惯/常用/默认…；我的首选/默认是…；以后都…
++      re.compile(r'我(?:更)?(?:偏好|喜欢|习惯|爱用|常用|一般用|通常用|平时用|总是用|一直用|默认用|一直|从不|不喜欢|不爱|不要|不用)\s*\S'),
++      re.compile(r'我(?:的)?(?:首选|默认|习惯|偏好)[^，。！？；]{0,8}(?:是|为|：|:)\s*\S'),
++      re.compile(r'以后(?:都)?(?:用|按|走|以)\s*\S')], "user_pref"),
+     ([re.compile(r'\bwe\s+(?:decided|agreed|chose)\s+\S', re.IGNORECASE),
+       re.compile(r'\bthe\s+project\s+(?:uses|needs|requires)\s+\S', re.IGNORECASE),
+       re.compile(r'(?:^|\s)мы\s+(?:решили|договорились|выбрали)\s+\S', re.IGNORECASE),
+-      re.compile(r'(?:^|\s)в\s+проекте\s+(?:используем|используется|нужен|нужна|нужно)\s+\S', re.IGNORECASE)], "project"),
++      re.compile(r'(?:^|\s)в\s+проекте\s+(?:используем|используется|нужен|нужна|нужно)\s+\S', re.IGNORECASE),
++      # Local patch 0002: Chinese decisions — 我们决定/定了/约定；(这个)项目用/统一；统一按…；决定用…
++      re.compile(r'我们(?:决定|定了|约定|说好|选择|采用|统一用|以后用|以后都)\s*\S'),
++      re.compile(r'(?:这个|该|本|此)?项目(?:用|需要|要求|采用|统一|必须)\s*\S'),
++      re.compile(r'统一(?:用|按|走|改|采)\s*\S'),
++      re.compile(r'决定(?:用|按|走|以后|就)\s*\S')], "project"),
+ )
+ # Local patch 0001: sentence ends. Upstream split on any '.', which cut tokens like "v1.18" or "e.g." into two
+ # fragments that both failed the length/pattern filters. CJK full-width punctuation ends a sentence; a Latin .!?
+-- 
+2.47.3
+

@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Submit a registered local patch upstream as a PR.
+
+Reads infra/patches/REGISTRY.yaml, prepares /root/workspace/forks/<repo>, applies the
+patch on a PR branch, pushes, and opens a PR with gh (or prints the compare URL when
+gh is not authenticated). Writes upstream_pr/pr_status back into REGISTRY.yaml.
+
+Usage: pr-submit <patch-id>
+Requires (one-time): gh auth login   [until then, falls back to compare-URL mode]
+"""
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]          # infra/patches
+REGISTRY = ROOT / "REGISTRY.yaml"
+FORKS = Path("/root/workspace/forks")
+
+
+def run(cmd, cwd=None, check=True, capture=True):
+    p = subprocess.run(cmd, cwd=cwd, text=True,
+                       stdout=subprocess.PIPE if capture else None,
+                       stderr=subprocess.PIPE if capture else None)
+    if check and p.returncode != 0:
+        sys.exit("command failed (%s): %s\n%s" % (p.returncode, " ".join(cmd), p.stderr or ""))
+    return p
+
+
+def hermes_python():
+    cands = sorted(Path("/root/.hermes/installs").glob("*/environments/*/venv/bin/python"))
+    if not cands:
+        sys.exit("no hermes managed python found under /root/.hermes/installs")
+    return str(cands[-1])
+
+
+def load_yaml():
+    # Prefer ruamel from hermes' managed python (round-trip safe); fall back to a tiny
+    # parser only if unavailable. Simple fallback: exec a YAML->dict via PyYAML if present.
+    code = (
+        "import sys, json; "
+        "from ruamel.yaml import YAML; "
+        "y=YAML(); "
+        "print(json.dumps(y.load(open(sys.argv[1], encoding='utf-8')), ensure_ascii=False, default=str))"
+    )
+    p = subprocess.run([hermes_python(), "-c", code, str(REGISTRY)],
+                       text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if p.returncode != 0:
+        sys.exit("cannot parse REGISTRY.yaml: " + p.stderr)
+    return json.loads(p.stdout)
+
+
+def gh_authed():
+    p = run(["gh", "auth", "status"], check=False)
+    return p.returncode == 0
+
+
+def repo_slug(url):
+    m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?$", url)
+    return m.group(1) if m else None
+
+
+def main():
+    if len(sys.argv) != 2:
+        sys.exit("usage: pr-submit <patch-id>")
+    pid = sys.argv[1]
+    data = load_yaml()
+    entry = next((e for e in data.get("patches", []) if e["id"] == pid), None)
+    if not entry:
+        sys.exit("patch id not found in REGISTRY: %s" % pid)
+    if entry.get("upstream_pr"):
+        sys.exit("already proposed: %s (pr_status=%s)" % (entry["upstream_pr"], entry.get("pr_status")))
+
+    slug = repo_slug(entry["upstream"])
+    if not slug:
+        sys.exit("cannot parse github slug from %s" % entry["upstream"])
+    owner, repo = slug.split("/")
+    workdir = FORKS / repo
+    FORKS.mkdir(parents=True, exist_ok=True)
+
+    if not workdir.exists():
+        print("fork workspace missing: %s" % workdir)
+        print("create it once with:")
+        print("  gh repo fork %s --clone --remote -- %s" % (slug, workdir))
+        print("  # or: git clone git@github.com:<your-fork>/%s.git %s && cd %s && "
+              "git remote add upstream %s" % (repo, workdir, workdir, entry["upstream"]))
+        sys.exit(2)
+
+    run(["git", "fetch", "upstream"], cwd=str(workdir))
+    branch = entry.get("pr_branch") or ("local-%s" % pid)
+    base = run(["git", "rev-parse", "--abbrev-ref", "upstream/HEAD"], cwd=str(workdir)).stdout.strip()
+    run(["git", "switch", "-C", branch, "upstream/" + base], cwd=str(workdir))
+    for patch in entry["patches"]:
+        run(["git", "am", str(ROOT / patch)], cwd=str(workdir))
+
+    title = run(["git", "log", "--format=%s", "-1"], cwd=str(workdir)).stdout.strip()
+    body = ("Local patch %s from infra/patches REGISTRY.\n\n%s\n"
+            % (pid, entry.get("notes", "")))
+
+    if not gh_authed():
+        run(["git", "push", "-u", "origin", branch], cwd=str(workdir), check=False)
+        print("\ngh not authenticated — push done/attempted. Open the PR manually:")
+        print("  https://github.com/%s/compare/%s...%s:%s?expand=1" % (slug, base, "<your-user>", branch))
+        print("then set upstream_pr/pr_status in REGISTRY.yaml by hand.")
+        return
+
+    run(["git", "push", "-u", "origin", branch], cwd=str(workdir))
+    p = run(["gh", "pr", "create", "--repo", slug, "--base", base,
+             "--head", run(["gh", "api", "user", "-q", ".login"]).stdout.strip() + ":" + branch,
+             "--title", title, "--body", body], cwd=str(workdir))
+    pr_url = p.stdout.strip()
+    print("PR created:", pr_url)
+    update_registry(pid, pr_url, "open")
+
+
+def update_registry(pid, url, status):
+    lines = REGISTRY.read_text(encoding="utf-8").splitlines()
+    out, in_entry = [], False
+    for line in lines:
+        if re.match(r"\s*- id:\s*" + re.escape(pid) + r"\s*$", line):
+            in_entry = True
+        elif in_entry and re.match(r"\s*- id:\s*\S+", line):
+            in_entry = False
+        if in_entry:
+            if re.match(r"\s*upstream_pr:\s*", line):
+                indent = line[:len(line) - len(line.lstrip())]
+                line = '%supstream_pr: "%s"' % (indent, url)
+            elif re.match(r"\s*pr_status:\s*", line):
+                indent = line[:len(line) - len(line.lstrip())]
+                line = "%spr_status: %s" % (indent, status)
+            elif re.match(r"\s*pr_checked_at:\s*", line):
+                indent = line[:len(line) - len(line.lstrip())]
+                line = "%spr_checked_at: %s" % (indent, datetime.date.today().isoformat())
+        out.append(line)
+    REGISTRY.write_text("\n".join(out) + "\n", encoding="utf-8")
+    print("REGISTRY.yaml updated for", pid)
+
+
+if __name__ == "__main__":
+    main()

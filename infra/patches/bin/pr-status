@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Check upstream PR status for registered patches.
+
+Usage: pr-status [patch-id]     (no arg = all entries with an upstream_pr)
+Prints open/merged/closed; for merged PRs reminds to run the retirement flow
+in infra/patches/README.md. Updates pr_status/pr_checked_at in REGISTRY.yaml
+when gh is authenticated.
+"""
+import datetime
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+REGISTRY = ROOT / "REGISTRY.yaml"
+
+
+def run(cmd, check=True):
+    p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if check and p.returncode != 0:
+        sys.exit("command failed: %s\n%s" % (" ".join(cmd), p.stderr))
+    return p
+
+
+def hermes_python():
+    cands = sorted(Path("/root/.hermes/installs").glob("*/environments/*/venv/bin/python"))
+    if not cands:
+        sys.exit("no hermes managed python found")
+    return str(cands[-1])
+
+
+def load_yaml():
+    code = ("import sys, json; from ruamel.yaml import YAML; "
+            "print(json.dumps(YAML().load(open(sys.argv[1], encoding='utf-8')), ensure_ascii=False, default=str))")
+    p = subprocess.run([hermes_python(), "-c", code, str(REGISTRY)],
+                       text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if p.returncode != 0:
+        sys.exit("cannot parse REGISTRY.yaml: " + p.stderr)
+    return json.loads(p.stdout)
+
+
+def gh_authed():
+    return run(["gh", "auth", "status"], check=False).returncode == 0
+
+
+def pr_state(url):
+    # https://github.com/owner/repo/pull/123 -> owner/repo, 123
+    m = re.match(r"https?://github\.com/([^/]+/[^/]+)/pull/(\d+)", url.strip())
+    if not m:
+        return "unknown"
+    p = run(["gh", "pr", "view", m.group(2), "--repo", m.group(1),
+             "--json", "state", "-q", ".state"], check=False)
+    return p.stdout.strip().lower() or "unknown" if p.returncode == 0 else "unknown"
+
+
+def rewrite(pid, state):
+    lines = REGISTRY.read_text(encoding="utf-8").splitlines()
+    out, in_entry = [], False
+    for line in lines:
+        if re.match(r"\s*- id:\s*" + re.escape(pid) + r"\s*$", line):
+            in_entry = True
+        elif in_entry and re.match(r"\s*- id:\s*\S+", line):
+            in_entry = False
+        if in_entry:
+            key = None
+            if re.match(r"\s*pr_status:\s*", line):
+                key = "pr_status"
+            elif re.match(r"\s*pr_checked_at:\s*", line):
+                key = "pr_checked_at"
+            if key:
+                indent = line[:len(line) - len(line.lstrip())]
+                val = state if key == "pr_status" else datetime.date.today().isoformat()
+                line = "%s%s: %s" % (indent, key, val)
+        out.append(line)
+    REGISTRY.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def main():
+    data = load_yaml()
+    only = sys.argv[1] if len(sys.argv) > 1 else None
+    entries = [e for e in data.get("patches", []) if (only is None or e["id"] == only)]
+    if only and not entries:
+        sys.exit("patch id not found: " + only)
+
+    authed = gh_authed()
+    if not authed:
+        print("gh not authenticated — showing recorded state only\n")
+
+    changed = False
+    for e in entries:
+        url = e.get("upstream_pr", "")
+        recorded = e.get("pr_status", "not-proposed")
+        if not url:
+            print("%-20s not-proposed" % e["id"])
+            continue
+        if not authed:
+            print("%-20s %-14s %s" % (e["id"], recorded, url))
+            continue
+        state = pr_state(url)
+        flag = ""
+        if state != recorded:
+            flag = "  (was %s)" % recorded
+            rewrite(e["id"], state)
+            changed = True
+        print("%-20s %-14s %s%s" % (e["id"], state, url, flag))
+        if state == "merged":
+            print("%-20s ^ MERGED — run retirement flow in README.md (status: merged-upstream)" % "")
+    if changed:
+        print("\nREGISTRY.yaml updated.")
+
+
+if __name__ == "__main__":
+    main()
